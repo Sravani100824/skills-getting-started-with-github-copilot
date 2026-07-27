@@ -113,5 +113,6 @@ def signup_for_activity(activity_name: str, email: str):
         raise HTTPException(status_code=400, detail=f"{activity_name} is full")
     
     # Add student
-    activity["participants"].append(normalized_email)
+    # activity["participants"].append(normalized_email)
+    activities[activity_name]["participants"].append(normalized_email)
     return {"message": f"Signed up {normalized_email} for {activity_name}"}
