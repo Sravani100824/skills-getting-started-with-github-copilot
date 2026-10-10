@@ -8,7 +8,16 @@ document.addEventListener("DOMContentLoaded", () => {
   async function fetchActivities() {
     try {
       const response = await fetch("/activities");
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const activities = await response.json();
+      if (!activities || Object.keys(activities).length === 0) {
+        activitiesList.innerHTML = "<p>No activities available at the moment.</p>";
+        return;
+      }
 
       // Clear loading message
       activitiesList.innerHTML = "";
@@ -18,7 +27,34 @@ document.addEventListener("DOMContentLoaded", () => {
         const activityCard = document.createElement("div");
         activityCard.className = "activity-card";
 
-        const spotsLeft = details.max_participants - details.participants.length;
+        const participants = Array.isArray(details.participants) ? details.participants : [];
+        const spotsLeft = details.max_participants - participants.length;
+
+        const pillsContainer = document.createElement('div');
+        pillsContainer.className = "participant-pills-container"
+
+        try{
+          participants.forEach(email => {
+            // Using a <span> is semantically better than <button> for non-clickable text
+            const trimmedEmail = String(email ?? "").trim(); // Ensure no leading/trailing whitespace
+            const pill = document.createElement('span');
+            pill.className = 'participant-pill';
+            
+            // Set the participant's name
+            pill.textContent = trimmedEmail;
+            
+            // Apply the CSS styling class
+            pill.classList.add('participant-pill');
+            
+            // Append to the activity card container
+            pillsContainer.appendChild(pill);
+          });
+
+        } catch (error) {
+          console.error("Error creating participant pills:", error);
+          pillsContainer.innerHTML = "<p>Failed to load participant information.</p>";
+        }
+          
 
         activityCard.innerHTML = `
           <h4>${name}</h4>
@@ -27,6 +63,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
         `;
 
+        activityCard.appendChild(pillsContainer);
         activitiesList.appendChild(activityCard);
 
         // Add option to select dropdown
@@ -62,6 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        await fetchActivities(); // Refresh the activities list to show updated participants
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
